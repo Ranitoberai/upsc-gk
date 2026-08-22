@@ -150,6 +150,7 @@
 
     // --- Fetching Data ---
     // --- Fetching Data ---
+    // --- Fetching Data ---
     let isFetching = false;
 
     async function fetchAlerts() {
@@ -170,12 +171,6 @@
         .limit(20);
 
       isFetching = false;
-
-      const { data, error } = await supabaseClient
-        .from('alert_upsc')
-        .select('*')
-        .order('published_at', { ascending: false })
-        .limit(20);
 
       if (error) {
         loading.innerHTML = `<span class="text-red-500">Error connecting to database.</span>`;
