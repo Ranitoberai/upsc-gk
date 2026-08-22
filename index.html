@@ -119,7 +119,7 @@
 
       const options = {
         "key": RAZORPAY_KEY_ID,
-        "amount": "50000", // ₹500 in paise
+        "amount": "100", // ₹500 in paise
         "currency": "INR",
         "name": "IAS Focus",
         "description": "Monthly Intelligence Briefs Subscription",
@@ -218,7 +218,7 @@
         lockCard.className = "relative bg-[#161B22] border border-[#30363D] rounded-xl p-8 overflow-hidden text-center mt-6";
         
         // ADD THESE TWO LINES
-        const buttonText = currentUser ? "Subscribe Now (₹500)" : "Sign in to Subscribe";
+        const buttonText = currentUser ? "Subscribe Now (₹1)" : "Sign in to Subscribe";
         const buttonAction = currentUser ? "startPayment()" : "handleAuthClick()";
 
         lockCard.innerHTML = `
