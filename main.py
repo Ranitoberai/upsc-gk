@@ -1,11 +1,8 @@
 import os
 import re
-import json
 import hashlib
 import urllib.request
 import feedparser
-import requests
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from supabase import create_client, Client
@@ -16,7 +13,6 @@ def contains_stale_date(title):
     now = datetime.now(timezone.utc)
     current_day = now.day
 
-    # Match patterns like "august 13" or "aug 13"
     match = re.search(r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})\b', title_lower)
     if match:
         month_str, day_num = match.groups()
@@ -26,6 +22,7 @@ def contains_stale_date(title):
     return False
 
 def clean_title(title):
+    # Strip trailing publisher suffixes appended by RSS feeds
     cleaned = re.sub(r'\s*-\s*[^-]+$', '', title)
     return cleaned.strip()
 
@@ -71,15 +68,15 @@ def fetch_feed_with_user_agent(url):
         print(f"⚠️ Error fetching feed from {url}: {e}")
         return None
 
-# --- 2. Source Fetchers ---
-def fetch_pib():
-    print("📰 Fetching PIB Press Releases...")
-    feed = fetch_feed_with_user_agent("https://www.pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=1")
+def process_google_news_feed(url, source_name, limit=15):
+    print(f"📡 Fetching {source_name}...")
+    feed = fetch_feed_with_user_agent(url)
     articles = []
+    
     if not feed or not feed.entries:
         return articles
 
-    for entry in feed.entries[:20]:
+    for entry in feed.entries[:limit]:
         title = clean_title(entry.get("title", ""))
         if not title or contains_stale_date(title):
             continue
@@ -97,69 +94,12 @@ def fetch_pib():
             "title": title,
             "link": entry.get("link", ""),
             "image_url": extract_image_url(entry),
-            "source": "PIB (Govt of India)",
+            "source": source_name,
             "published_at": iso_pub
         })
     return articles
 
-def fetch_prs():
-    print("⚖️ Fetching PRS Legislative Research...")
-    articles = []
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        res = requests.get("https://prsindia.org/billtrack", headers=headers, timeout=10)
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, 'html.parser')
-            for card in soup.find_all('div', class_='bill-title')[:10]:
-                a_tag = card.find('a')
-                if a_tag:
-                    title = clean_title(a_tag.text.strip())
-                    if not title or contains_stale_date(title):
-                        continue
-                    link = "https://prsindia.org" + a_tag['href'] if a_tag['href'].startswith('/') else a_tag['href']
-                    articles.append({
-                        "id": hashlib.md5(title.encode('utf-8')).hexdigest(),
-                        "title": title,
-                        "link": link,
-                        "image_url": None,
-                        "source": "PRS Legislative Research",
-                        "published_at": datetime.now(timezone.utc).isoformat()
-                    })
-    except Exception as e:
-        print(f"⚠️ PRS Error: {e}")
-    return articles
-
-def fetch_newsonair():
-    print("🎙️ Fetching NewsOnAIR...")
-    feed = fetch_feed_with_user_agent("https://news.google.com/rss/search?q=site:newsonair.gov.in+when:1d&hl=en-IN&gl=IN&ceid=IN:en")
-    articles = []
-    if not feed or not feed.entries:
-        return articles
-
-    for entry in feed.entries[:15]:
-        title = clean_title(entry.get("title", ""))
-        if not title or contains_stale_date(title):
-            continue
-
-        raw_pub = entry.get("published", "")
-        iso_pub = datetime.now(timezone.utc).isoformat()
-        if raw_pub:
-            try:
-                iso_pub = parsedate_to_datetime(raw_pub).isoformat()
-            except Exception:
-                pass
-
-        articles.append({
-            "id": hashlib.md5(title.encode('utf-8')).hexdigest(),
-            "title": title,
-            "link": entry.get("link", ""),
-            "image_url": extract_image_url(entry),
-            "source": "All India Radio (AIR)",
-            "published_at": iso_pub
-        })
-    return articles
-
-# --- 3. Main Pipeline Execution ---
+# --- 2. Main Pipeline Execution ---
 def main():
     supabase_url = os.environ.get('SUPABASE_URL')
     supabase_key = os.environ.get('SUPABASE_KEY')
@@ -170,9 +110,26 @@ def main():
     supabase.table("raw_upsc_news").delete().lt("published_at", fourteen_days_ago).execute()
     supabase.table("alert_upsc").delete().lt("published_at", fourteen_days_ago).execute()
 
-    # 2. Collect and Deduplicate across feeds
+    # 2. Fetch using Google News Aggregator RSS endpoints to bypass cloud firewalls
+    pib_data = process_google_news_feed(
+        "https://news.google.com/rss/search?q=site:pib.gov.in+when:1d&hl=en-IN&gl=IN&ceid=IN:en", 
+        "PIB (Govt of India)", 
+        20
+    )
+    prs_data = process_google_news_feed(
+        "https://news.google.com/rss/search?q=site:prsindia.org+when:7d&hl=en-IN&gl=IN&ceid=IN:en", 
+        "PRS Legislative Research", 
+        10
+    )
+    air_data = process_google_news_feed(
+        "https://news.google.com/rss/search?q=site:newsonair.gov.in+when:1d&hl=en-IN&gl=IN&ceid=IN:en", 
+        "All India Radio (AIR)", 
+        15
+    )
+
+    # Combine and Deduplicate
     all_dict = {}
-    for item in fetch_pib() + fetch_prs() + fetch_newsonair():
+    for item in pib_data + prs_data + air_data:
         all_dict[item["title"]] = item
 
     raw_articles = list(all_dict.values())
@@ -195,6 +152,7 @@ def main():
             "category": category,
             "source": item["source"],
             "link": item["link"],
+            "image_url": item.get("image_url"),
             "published_at": item["published_at"]
         })
 
