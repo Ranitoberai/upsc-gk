@@ -68,11 +68,18 @@
       }
       const { data } = await supabaseClient
         .from('profiles')
-        .select('is_premium')
+        .select('is_premium, expires_at')
         .eq('id', user.id)
         .single();
       
-      isPremiumUser = data ? data.is_premium : false;
+      if (data && data.is_premium && data.expires_at) {
+        const expiresAt = new Date(data.expires_at);
+        const now = new Date();
+        // Check if subscription has not expired yet
+        isPremiumUser = expiresAt > now;
+      } else {
+        isPremiumUser = false;
+      }
     }
 
     async function updateUIForAuth(session) {
@@ -119,15 +126,26 @@
 
       const options = {
         "key": RAZORPAY_KEY_ID,
-        "amount": "100", // ₹500 in paise
+        "amount": "60000", // ₹600 in paise
         "currency": "INR",
         "name": "IAS Focus",
-        "description": "Monthly Intelligence Briefs Subscription",
+        "description": "Annual Intelligence Briefs Subscription (1 Year)",
         "handler": async function (response) {
           alert("Payment Successful! ID: " + response.razorpay_payment_id);
+          
+          // Calculate exactly 1 year from today
+          const expiresAt = new Date();
+          expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
           await supabaseClient
             .from('profiles')
-            .upsert({ id: currentUser.id, is_premium: true, updated_at: new Date() });
+            .upsert({ 
+              id: currentUser.id, 
+              is_premium: true, 
+              expires_at: expiresAt.toISOString(),
+              updated_at: new Date() 
+            });
+            
           isPremiumUser = true;
           fetchAlerts();
         },
@@ -218,7 +236,7 @@
         lockCard.className = "relative bg-[#161B22] border border-[#30363D] rounded-xl p-8 overflow-hidden text-center mt-6";
         
         // ADD THESE TWO LINES
-        const buttonText = currentUser ? "Subscribe Now (₹1)" : "Sign in to Subscribe";
+        const buttonText = currentUser ? "Subscribe Now (₹600 / Year)" : "Sign in to Subscribe";
         const buttonAction = currentUser ? "startPayment()" : "handleAuthClick()";
 
         lockCard.innerHTML = `
