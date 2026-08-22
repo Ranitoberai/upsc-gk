@@ -22,7 +22,7 @@
       </div>
       <div class="flex items-center gap-4">
         <div id="user-info" class="text-xs text-emerald-400 font-semibold hidden"></div>
-        <button id="auth-btn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg text-xs font-bold transition shadow-md">
+        <button id="auth-btn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg text-xs font-bold transition shadow-md cursor-pointer">
           Sign In
         </button>
       </div>
@@ -31,18 +31,20 @@
 
   <main class="max-w-7xl mx-auto px-4 py-6">
     
-    <!-- Filters Bar (Timeframe & Date Picker) -->
+    <!-- Filters Bar (Timeframe & Date Dropdown) -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-[#161B22] border border-[#30363D] p-3 rounded-xl shadow-sm">
       <div class="flex items-center gap-2 overflow-x-auto">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">Timeframe:</span>
-        <button onclick="setFilter('all', this)" class="filter-btn bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-lg transition">All (Recent)</button>
-        <button onclick="setFilter('today', this)" class="filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">Today</button>
-        <button onclick="setFilter('yesterday', this)" class="filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">Yesterday</button>
+        <button onclick="setFilter('all', this)" class="filter-btn bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer">All (Recent)</button>
+        <button onclick="setFilter('today', this)" class="filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer">Today</button>
+        <button onclick="setFilter('yesterday', this)" class="filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer">Yesterday</button>
       </div>
       
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Date:</span>
-        <input type="date" id="date-filter" onchange="setDateFilter(this.value)" class="bg-[#0D1117] border border-[#30363D] text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500" />
+        <select id="date-filter" onchange="setDateFilter(this.value)" class="bg-[#0D1117] border border-[#30363D] text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer">
+          <option value="">Select a date...</option>
+        </select>
       </div>
     </div>
 
@@ -215,7 +217,35 @@
       }
 
       allAlertsData = data || [];
+      populateDateDropdown();
       applyFiltersAndRender();
+    }
+
+    // --- Populate Date Dropdown Dynamically ---
+    function populateDateDropdown() {
+      const select = document.getElementById('date-filter');
+      select.innerHTML = '<option value="">Select a date...</option>';
+      
+      const datesMap = new Set();
+      allAlertsData.forEach(item => {
+        if (item.published_at) {
+          const d = new Date(item.published_at).toISOString().split('T')[0];
+          datesMap.add(d);
+        }
+      });
+
+      const sortedDates = Array.from(datesMap).sort().reverse();
+
+      sortedDates.forEach(dateStr => {
+        const formatted = new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const opt = document.createElement('option');
+        opt.value = dateStr;
+        opt.textContent = formatted;
+        if (dateStr === selectedDateVal) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
+      });
     }
 
     // --- Filtering Logic ---
@@ -225,16 +255,23 @@
       document.getElementById('date-filter').value = '';
 
       document.querySelectorAll('.filter-btn').forEach(b => {
-        b.className = "filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition";
+        b.className = "filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer";
       });
-      btn.className = "filter-btn bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-lg transition";
+      btn.className = "filter-btn bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer";
 
       applyFiltersAndRender();
     }
 
     function setDateFilter(dateStr) {
+      if (!dateStr) return;
       selectedDateVal = dateStr;
       currentFilter = 'date';
+
+      // Reset timeframe buttons visual state
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.className = "filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer";
+      });
+
       applyFiltersAndRender();
     }
 
