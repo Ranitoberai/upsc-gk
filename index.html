@@ -59,12 +59,35 @@
       }
     }
 
-    function updateUIForAuth(session) {
+    let lastProcessedUserId = undefined;
+
+    async function checkUserSubscription(user) {
+      if (!user) {
+        isPremiumUser = false;
+        return;
+      }
+      const { data } = await supabaseClient
+        .from('profiles')
+        .select('is_premium')
+        .eq('id', user.id)
+        .single();
+      
+      isPremiumUser = data ? data.is_premium : false;
+    }
+
+    async function updateUIForAuth(session) {
+      const userId = session?.user?.id || null;
+      const userChanged = userId !== lastProcessedUserId;
+      lastProcessedUserId = userId;
+
       const authBtn = document.getElementById("auth-btn");
       const userInfo = document.getElementById("user-info");
       
       if (session && session.user) {
         currentUser = session.user;
+        if (userChanged) {
+          await checkUserSubscription(currentUser);
+        }
         authBtn.textContent = "Sign Out";
         authBtn.classList.replace("bg-amber-500", "bg-slate-700");
         authBtn.classList.replace("text-slate-950", "text-white");
@@ -73,6 +96,7 @@
         userInfo.classList.remove("hidden");
       } else {
         currentUser = null;
+        isPremiumUser = false;
         authBtn.textContent = "Sign in with Google";
         authBtn.classList.replace("bg-slate-700", "bg-amber-500");
         authBtn.classList.replace("text-white", "text-slate-950");
@@ -81,9 +105,12 @@
         userInfo.classList.add("hidden");
       }
       
-      fetchAlerts(); 
+      // Prevents double-fetching when multiple auth events fire
+      if (userChanged || !window._hasFetched) {
+        window._hasFetched = true;
+        fetchAlerts(); 
+      }
     }
-
     function startPayment() {
       if (!currentUser) {
         handleAuthClick();
