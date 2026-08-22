@@ -41,17 +41,36 @@ def extract_image_url(entry):
 
 def classify_gs_paper(title):
     t = title.lower()
+    
+    # GS Paper 2: Polity, Governance, Social Justice & International Relations
     if any(k in t for k in ['bill', 'act', 'constitution', 'parliament', 'judiciary', 'court', 
-                            'governance', 'scheme', 'policy', 'election', 'ministry', 'treaty', 
-                            'bilateral', 'summit', 'g20', 'un', 'mea', 'polity']):
+                           'governance', 'scheme', 'policy', 'election', 'ministry', 'treaty', 
+                           'bilateral', 'summit', 'g20', 'un', 'mea', 'polity', 'health', 
+                           'education', 'welfare', 'vulnerable', 'hunger', 'diaspora', 'ngo', 
+                           'shg', 'regulatory', 'statutory', 'parliamentary', 'supreme court']):
         return "GS Paper 2 (Polity & IR)", "Governance & IR"
+        
+    # GS Paper 3: Economy, Agriculture, S&T, Environment, Security & Disasters
     elif any(k in t for k in ['rbi', 'gdp', 'economy', 'budget', 'tax', 'isro', 'space', 
-                             'defence', 'climate', 'pollution', 'forest', 'wildlife', 
-                             'agriculture', 'infrastructure', 'cyber', 'security', 'tech']):
+                               'defence', 'climate', 'pollution', 'forest', 'wildlife', 
+                               'agriculture', 'infrastructure', 'cyber', 'security', 'tech',
+                               'msp', 'subsidy', 'food processing', 'land reform', 'disaster', 
+                               'money laundering', 'extremism', 'biotech', 'robotic', 'energy',
+                               'import', 'export', 'inflation', 'semiconductor']):
         return "GS Paper 3 (Economy, S&T, Env)", "Economy & Tech"
+        
+    # GS Paper 1: Heritage, Culture, History, Society & World Geography
     elif any(k in t for k in ['heritage', 'culture', 'monument', 'history', 'art', 
-                             'geography', 'earthquake', 'cyclone', 'tribal', 'society']):
+                               'geography', 'earthquake', 'cyclone', 'tribal', 'society',
+                               'women', 'urbanization', 'globalization', 'communalism', 
+                               'secularism', 'tsunami', 'volcanic', 'freedom struggle', 
+                               'independence', 'craft', 'temple', 'dynasty']):
         return "GS Paper 1 (Culture & Geo)", "Culture & Society"
+        
+    # GS Paper 4 or General fallback
+    elif any(k in t for k in ['ethics', 'probity', 'corruption', 'integrity', 'rti', 'transparency']):
+        return "GS Paper 4 (Ethics)", "Ethics & Integrity"
+        
     else:
         return "GS Paper 4 / General Policy", "General Update"
 
