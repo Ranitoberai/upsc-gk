@@ -8,11 +8,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
-<body class="bg-[#0D1117] text-slate-200 min-h-screen pb-12 font-sans">
+<body class="bg-[#0D1117] text-slate-200 min-h-screen pb-12 font-sans selection:bg-amber-500 selection:text-slate-950">
   
-  <header class="bg-[#161B22] border-b border-[#30363D] sticky top-0 z-20 py-4">
-    <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
+  <header class="bg-[#161B22] border-b border-[#30363D] sticky top-0 z-30 py-4">
+    <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
       <div>
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span class="text-[10px] font-bold tracking-widest text-amber-400 uppercase">Live Intelligence Pipeline</span>
+        </div>
         <h1 class="text-xl font-extrabold text-white tracking-wide">UPSC GK • Primary Sources</h1>
         <p class="text-xs text-slate-400">Verified updates from PIB, PRS & AIR</p>
       </div>
@@ -25,25 +29,44 @@
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-4 py-8">
-    <div id="loading" class="text-center py-16 text-amber-400 font-bold text-xs uppercase tracking-widest animate-pulse">
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    
+    <!-- Filters Bar (Timeframe & Date Picker) -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-[#161B22] border border-[#30363D] p-3 rounded-xl shadow-sm">
+      <div class="flex items-center gap-2 overflow-x-auto">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">Timeframe:</span>
+        <button onclick="setFilter('all', this)" class="filter-btn bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-lg transition">All (Recent)</button>
+        <button onclick="setFilter('today', this)" class="filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">Today</button>
+        <button onclick="setFilter('yesterday', this)" class="filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">Yesterday</button>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Date:</span>
+        <input type="date" id="date-filter" onchange="setDateFilter(this.value)" class="bg-[#0D1117] border border-[#30363D] text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500" />
+      </div>
+    </div>
+
+    <div id="loading" class="text-center py-20 text-amber-400 font-bold text-xs uppercase tracking-widest animate-pulse">
       Loading official current affairs...
     </div>
     
-    <div id="alerts-container" class="space-y-4 hidden"></div>
+    <!-- 3-Column Grid Container -->
+    <div id="alerts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 hidden"></div>
   </main>
 
   <script>
-    // 🚨 PASTE YOUR SUPABASE "ANON" KEY BELOW (starts with eyJh...)
     const SUPABASE_URL = "https://zyojfrufschtalrprgap.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b2pmcnVmc2NodGFscnByZ2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNzkzNzAsImV4cCI6MjEwMjk1NTM3MH0.xUpWhLduhpHhEh2mWOTfZIkajXvHmTPOvRS8_K_igwg"; 
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const RAZORPAY_KEY_ID ="rzp_live_TSoWiV4CMB1xRH"
+    const RAZORPAY_KEY_ID = "rzp_live_TSoWiV4CMB1xRH";
     
     // Auth State Variables
     let currentUser = null;
     let isPremiumUser = false; 
+    let allAlertsData = [];
+    let currentFilter = 'all';
+    let selectedDateVal = '';
 
     // --- Authentication Logic ---
     async function handleAuthClick() {
@@ -75,7 +98,6 @@
       if (data && data.is_premium && data.expires_at) {
         const expiresAt = new Date(data.expires_at);
         const now = new Date();
-        // Check if subscription has not expired yet
         isPremiumUser = expiresAt > now;
       } else {
         isPremiumUser = false;
@@ -104,7 +126,7 @@
       } else {
         currentUser = null;
         isPremiumUser = false;
-        authBtn.textContent = "Sign in with Google";
+        authBtn.textContent = "Sign In";
         authBtn.classList.replace("bg-slate-700", "bg-amber-500");
         authBtn.classList.replace("text-white", "text-slate-950");
         
@@ -112,12 +134,12 @@
         userInfo.classList.add("hidden");
       }
       
-      // Prevents double-fetching when multiple auth events fire
       if (userChanged || !window._hasFetched) {
         window._hasFetched = true;
         fetchAlerts(); 
       }
     }
+
     function startPayment() {
       if (!currentUser) {
         handleAuthClick();
@@ -133,7 +155,6 @@
         "handler": async function (response) {
           alert("Payment Successful! ID: " + response.razorpay_payment_id);
           
-          // Calculate exactly 1 year from today
           const expiresAt = new Date();
           expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
@@ -147,7 +168,7 @@
             });
             
           isPremiumUser = true;
-          fetchAlerts();
+          applyFiltersAndRender();
         },
         "prefill": {
           "name": currentUser.user_metadata.full_name || "",
@@ -167,8 +188,6 @@
     document.getElementById("auth-btn").addEventListener("click", handleAuthClick);
 
     // --- Fetching Data ---
-    // --- Fetching Data ---
-    // --- Fetching Data ---
     let isFetching = false;
 
     async function fetchAlerts() {
@@ -186,80 +205,149 @@
         .from('alert_upsc')
         .select('*')
         .order('published_at', { ascending: false })
-        .limit(20);
+        .limit(30);
 
       isFetching = false;
 
       if (error) {
-        loading.innerHTML = `<span class="text-red-500">Error connecting to database.</span>`;
+        loading.innerHTML = `<span class="text-red-500 font-bold">Error connecting to database.</span>`;
         return;
       }
 
-      renderAlerts(data || []);
+      allAlertsData = data || [];
+      applyFiltersAndRender();
     }
 
-    function renderAlerts(alerts) {
+    // --- Filtering Logic ---
+    function setFilter(type, btn) {
+      currentFilter = type;
+      selectedDateVal = '';
+      document.getElementById('date-filter').value = '';
+
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.className = "filter-btn bg-[#0D1117] border border-[#30363D] text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition";
+      });
+      btn.className = "filter-btn bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-1.5 rounded-lg transition";
+
+      applyFiltersAndRender();
+    }
+
+    function setDateFilter(dateStr) {
+      selectedDateVal = dateStr;
+      currentFilter = 'date';
+      applyFiltersAndRender();
+    }
+
+    function applyFiltersAndRender() {
+      let filtered = [...allAlertsData];
+      const now = new Date();
+
+      if (currentFilter === 'today') {
+        filtered = filtered.filter(item => {
+          if (!item.published_at) return false;
+          const pubDate = new Date(item.published_at);
+          return pubDate.toDateString() === now.toDateString();
+        });
+      } else if (currentFilter === 'yesterday') {
+        const yesterday = new Date();
+        yesterday.setDate(now.getDate() - 1);
+        filtered = filtered.filter(item => {
+          if (!item.published_at) return false;
+          const pubDate = new Date(item.published_at);
+          return pubDate.toDateString() === yesterday.toDateString();
+        });
+      } else if (currentFilter === 'date' && selectedDateVal) {
+        filtered = filtered.filter(item => {
+          if (!item.published_at) return false;
+          const pubDate = new Date(item.published_at).toISOString().split('T')[0];
+          return pubDate === selectedDateVal;
+        });
+      }
+
+      renderCards(filtered);
+    }
+
+    // --- Share Utility ---
+    function shareArticle(title, url) {
+      if (navigator.share) {
+        navigator.share({ title: title, url: url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url);
+        alert("Article link copied to clipboard!");
+      }
+    }
+
+    // --- Rendering Cards ---
+    function renderCards(alerts) {
       const container = document.getElementById("alerts-container");
       const loading = document.getElementById("loading");
 
+      container.innerHTML = "";
+
       if (alerts.length === 0) {
-        container.innerHTML = `<div class="text-center py-16 text-slate-500 text-xs font-bold uppercase">No updates recorded yet.</div>`;
+        container.innerHTML = `<div class="col-span-full text-center py-16 text-slate-500 text-xs font-bold uppercase tracking-wider">No updates match this filter.</div>`;
         loading.classList.add("hidden");
         container.classList.remove("hidden");
         return;
       }
 
       const hasFullAccess = isPremiumUser;
-
       const freeItems = hasFullAccess ? alerts : alerts.slice(0, 3);
       const lockedCount = hasFullAccess ? 0 : Math.max(0, alerts.length - 3);
 
       freeItems.forEach(alert => {
-        const card = document.createElement("a");
-        card.href = alert.link;
-        card.target = "_blank";
-        card.className = "bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-slate-500 block transition-all shadow-sm";
+        const formattedDate = alert.published_at 
+          ? new Date(alert.published_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+          : 'Recent Update';
+
+        const card = document.createElement("div");
+        card.className = "bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-slate-500 flex flex-col justify-between transition-all shadow-sm";
+        
         card.innerHTML = `
-          <div class="flex justify-between items-center mb-2 text-[10px] font-bold">
-            <span class="text-emerald-400 uppercase bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">${alert.gs_paper}</span>
-            <span class="text-slate-400">${alert.source}</span>
+          <div>
+            <div class="flex justify-between items-center mb-3 text-[10px] font-bold">
+              <span class="text-amber-400 uppercase bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">${alert.gs_paper || 'UPSC'}</span>
+              <span class="text-emerald-400 uppercase bg-emerald-950/40 px-2.5 py-1 rounded border border-emerald-500/30">${alert.source || 'PIB'}</span>
+            </div>
+            <h2 class="text-sm font-bold text-white mb-4 leading-snug">${alert.title}</h2>
           </div>
-          <h2 class="text-base font-bold text-white mb-2 leading-snug">${alert.title}</h2>
-          <div class="flex justify-between text-xs text-slate-400 pt-3 mt-3 border-t border-[#30363D]/60">
-            <span class="text-amber-400 font-bold uppercase text-[10px] tracking-wider">Read Official Release ↗</span>
+          <div class="pt-3 border-t border-[#30363D]/60 flex justify-between items-center text-xs text-slate-400">
+            <span class="text-[11px]">📅 ${formattedDate}</span>
+            <div class="flex items-center gap-3 font-bold text-[11px]">
+              <button onclick="shareArticle('${escape(alert.title)}', '${alert.link}')" class="hover:text-amber-400 transition flex items-center gap-1 cursor-pointer">🔗 SHARE</button>
+              <a href="${alert.link}" target="_blank" class="text-amber-400 hover:underline flex items-center gap-1">SOURCE ↗</a>
+            </div>
           </div>`;
         container.appendChild(card);
       });
 
       if (lockedCount > 0) {
         const lockCard = document.createElement("div");
-        lockCard.className = "relative bg-[#161B22] border border-[#30363D] rounded-xl p-8 overflow-hidden text-center mt-6";
+        lockCard.className = "col-span-full bg-gradient-to-r from-[#161B22] via-[#1f2937] to-[#161B22] border border-amber-500/30 rounded-xl p-8 text-center mt-4 shadow-xl";
         
-        // ADD THESE TWO LINES
         const buttonText = currentUser ? "Subscribe Now (₹600 / Year)" : "Sign in to Subscribe";
         const buttonAction = currentUser ? "startPayment()" : "handleAuthClick()";
 
         lockCard.innerHTML = `
-          <div class="relative z-10 flex flex-col items-center justify-center py-4">
-            <div class="bg-amber-500/10 text-amber-400 p-4 rounded-full mb-4 border border-amber-500/20 text-2xl">
+          <div class="flex flex-col items-center justify-center py-4 max-w-lg mx-auto">
+            <div class="bg-amber-500/10 text-amber-400 p-4 rounded-full mb-4 border border-amber-500/20 text-2xl shadow-inner">
               🔒
             </div>
             <h3 class="text-lg font-bold text-white mb-2">Unlock ${lockedCount}+ More Articles</h3>
-            <p class="text-sm text-slate-400 mb-6 max-w-sm">
-              Free users can view the top 3 headlines. Subscribe to access the full real-time intelligence feed.
+            <p class="text-sm text-slate-300 mb-6 leading-relaxed">
+              Free users can view the top 3 headlines. Subscribe for annual access to the full real-time intelligence feed.
             </p>
-            <!-- UPDATE THE ONCLICK AND BUTTON TEXT HERE -->
-            <button onclick="${buttonAction}" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg text-sm font-bold transition shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <button onclick="${buttonAction}" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-8 py-3 rounded-xl text-sm font-bold transition shadow-[0_0_20px_rgba(245,158,11,0.25)] cursor-pointer">
               ${buttonText}
             </button>
           </div>
         `;
         container.appendChild(lockCard);
       }
+
       loading.classList.add("hidden");
       container.classList.remove("hidden");
     }
-
   </script>
 </body>
 </html>
