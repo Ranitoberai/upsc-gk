@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UPSC GK • Daily Primary Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-[#0D1117] text-slate-200 min-h-screen pb-12 font-sans">
+  
+  <header class="bg-[#161B22] border-b border-[#30363D] sticky top-0 z-20 py-4">
+    <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-xl font-extrabold text-white tracking-wide">UPSC GK • Primary Sources</h1>
+        <p class="text-xs text-slate-400">Verified updates from PIB, PRS & AIR</p>
+      </div>
+      <button class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg text-xs font-bold transition shadow-md">
+        SUBSCRIBE
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8">
+    <div id="loading" class="text-center py-16 text-amber-400 font-bold text-xs uppercase tracking-widest animate-pulse">
+      Loading official current affairs...
+    </div>
+    
+    <div id="alerts-container" class="space-y-4 hidden"></div>
+  </main>
+
+  <script>
+    // 🚨 PASTE YOUR SUPABASE URL AND PUBLIC "ANON" KEY HERE
+    const SUPABASE_URL = "https://zyojfrufschtalrprgap.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b2pmcnVmc2NodGFscnByZ2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNzkzNzAsImV4cCI6MjEwMjk1NTM3MH0.xUpWhLduhpHhEh2mWOTfZIkajXvHmTPOvRS8_K_igwg"; 
+    
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Set to 'false' for free users. Later this will dynamically toggle when users log in!
+    const isPremiumUser = false; 
+
+    async function fetchAlerts() {
+      const container = document.getElementById("alerts-container");
+      const loading = document.getElementById("loading");
+
+      // Fetch today's updates (we fetch top 20 just to evaluate)
+      const { data, error } = await supabaseClient
+        .from('alert_upsc')
+        .select('*')
+        .order('published_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        loading.innerHTML = `<span class="text-red-500">Error connecting to database.</span>`;
+        return;
+      }
+
+      renderAlerts(data || []);
+    }
+
+    function renderAlerts(alerts) {
+      const container = document.getElementById("alerts-container");
+      const loading = document.getElementById("loading");
+      container.innerHTML = "";
+
+      if (alerts.length === 0) {
+        container.innerHTML = `<div class="text-center py-16 text-slate-500 text-xs font-bold uppercase">No updates recorded yet.</div>`;
+        loading.classList.add("hidden");
+        container.classList.remove("hidden");
+        return;
+      }
+
+      // 1. Separate the Free 3 items from the Locked items
+      const freeItems = isPremiumUser ? alerts : alerts.slice(0, 3);
+      const lockedCount = isPremiumUser ? 0 : Math.max(0, alerts.length - 3);
+
+      // 2. Render Free Cards
+      freeItems.forEach(alert => {
+        const card = document.createElement("a");
+        card.href = alert.link;
+        card.target = "_blank";
+        card.className = "bg-[#161B22] border border-[#30363D] rounded-xl p-5 hover:border-slate-500 block transition-all shadow-sm";
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-2 text-[10px] font-bold">
+            <span class="text-emerald-400 uppercase bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">${alert.gs_paper}</span>
+            <span class="text-slate-400">${alert.source}</span>
+          </div>
+          <h2 class="text-base font-bold text-white mb-2 leading-snug">${alert.title}</h2>
+          <div class="flex justify-between text-xs text-slate-400 pt-3 mt-3 border-t border-[#30363D]/60">
+            <span class="text-amber-400 font-bold uppercase text-[10px] tracking-wider">Read Official Release ↗</span>
+          </div>`;
+        container.appendChild(card);
+      });
+
+      // 3. Render Paywall Lock Card
+      if (lockedCount > 0) {
+        const lockCard = document.createElement("div");
+        lockCard.className = "relative bg-[#161B22] border border-[#30363D] rounded-xl p-8 overflow-hidden text-center mt-6";
+        lockCard.innerHTML = `
+          <div class="relative z-10 flex flex-col items-center justify-center py-4">
+            <div class="bg-amber-500/10 text-amber-400 p-4 rounded-full mb-4 border border-amber-500/20 text-2xl">
+              🔒
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Unlock ${lockedCount}+ More Articles</h3>
+            <p class="text-sm text-slate-400 mb-6 max-w-sm">
+              Free users can view the top 3 headlines. Subscribe to Premium to access the full real-time intelligence feed across all GS Papers.
+            </p>
+            <button class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg text-sm font-bold transition shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              Unlock Full Access
+            </button>
+          </div>
+        `;
+        container.appendChild(lockCard);
+      }
+
+      loading.classList.add("hidden");
+      container.classList.remove("hidden");
+    }
+
+    fetchAlerts();
+  </script>
+</body>
+</html>
