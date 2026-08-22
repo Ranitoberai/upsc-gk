@@ -1,0 +1,26 @@
+name: UPSC Scraper Cron
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # Runs automatically every 3 hours
+  workflow_dispatch:      # Allows you to trigger it manually via a button
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+        
+      - name: Run Pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python main.py
