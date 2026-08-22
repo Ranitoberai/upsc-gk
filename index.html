@@ -6,6 +6,7 @@
   <title>UPSC GK • Daily Primary Intelligence</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body class="bg-[#0D1117] text-slate-200 min-h-screen pb-12 font-sans">
   
@@ -38,6 +39,7 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b2pmcnVmc2NodGFscnByZ2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNzkzNzAsImV4cCI6MjEwMjk1NTM3MH0.xUpWhLduhpHhEh2mWOTfZIkajXvHmTPOvRS8_K_igwg"; 
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const RAZORPAY_KEY_ID ="rzp_test_TSnucwyv6TYxS5"
     
     // Auth State Variables
     let currentUser = null;
@@ -82,6 +84,37 @@
       fetchAlerts(); 
     }
 
+    function startPayment() {
+      if (!currentUser) {
+        handleAuthClick();
+        return;
+      }
+
+      const options = {
+        "key": RAZORPAY_KEY_ID,
+        "amount": "50000", // ₹500 in paise
+        "currency": "INR",
+        "name": "IAS Focus",
+        "description": "Monthly Intelligence Briefs Subscription",
+        "handler": async function (response) {
+          alert("Payment Successful! ID: " + response.razorpay_payment_id);
+          await supabaseClient
+            .from('profiles')
+            .upsert({ id: currentUser.id, is_premium: true, updated_at: new Date() });
+          isPremiumUser = true;
+          fetchAlerts();
+        },
+        "prefill": {
+          "name": currentUser.user_metadata.full_name || "",
+          "email": currentUser.email || ""
+        },
+        "theme": { "color": "#f59e0b" }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+    }
+    
     supabaseClient.auth.onAuthStateChange((event, session) => {
       updateUIForAuth(session);
     });
@@ -147,6 +180,11 @@
       if (lockedCount > 0) {
         const lockCard = document.createElement("div");
         lockCard.className = "relative bg-[#161B22] border border-[#30363D] rounded-xl p-8 overflow-hidden text-center mt-6";
+        
+        // ADD THESE TWO LINES
+        const buttonText = currentUser ? "Subscribe Now (₹500)" : "Sign in to Subscribe";
+        const buttonAction = currentUser ? "startPayment()" : "handleAuthClick()";
+
         lockCard.innerHTML = `
           <div class="relative z-10 flex flex-col items-center justify-center py-4">
             <div class="bg-amber-500/10 text-amber-400 p-4 rounded-full mb-4 border border-amber-500/20 text-2xl">
@@ -154,16 +192,16 @@
             </div>
             <h3 class="text-lg font-bold text-white mb-2">Unlock ${lockedCount}+ More Articles</h3>
             <p class="text-sm text-slate-400 mb-6 max-w-sm">
-              Free users can view the top 3 headlines. Sign in and subscribe to access the full real-time intelligence feed.
+              Free users can view the top 3 headlines. Subscribe to access the full real-time intelligence feed.
             </p>
-            <button onclick="handleAuthClick()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg text-sm font-bold transition shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-              Sign in with Google
+            <!-- UPDATE THE ONCLICK AND BUTTON TEXT HERE -->
+            <button onclick="${buttonAction}" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg text-sm font-bold transition shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              ${buttonText}
             </button>
           </div>
         `;
         container.appendChild(lockCard);
       }
-
       loading.classList.add("hidden");
       container.classList.remove("hidden");
     }
