@@ -149,13 +149,27 @@
     document.getElementById("auth-btn").addEventListener("click", handleAuthClick);
 
     // --- Fetching Data ---
+    // --- Fetching Data ---
+    let isFetching = false;
+
     async function fetchAlerts() {
+      if (isFetching) return;
+      isFetching = true;
+
       const container = document.getElementById("alerts-container");
       const loading = document.getElementById("loading");
       
       container.innerHTML = "";
       loading.classList.remove("hidden");
       container.classList.add("hidden");
+
+      const { data, error } = await supabaseClient
+        .from('alert_upsc')
+        .select('*')
+        .order('published_at', { ascending: false })
+        .limit(20);
+
+      isFetching = false;
 
       const { data, error } = await supabaseClient
         .from('alert_upsc')
