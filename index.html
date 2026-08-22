@@ -31,6 +31,20 @@
 
   <main class="max-w-7xl mx-auto px-4 py-6">
     
+    <!-- UPSC Exam Countdown & Motivation Banner -->
+    <div class="bg-gradient-to-r from-amber-500/10 via-[#161B22] to-amber-500/10 border border-amber-500/25 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">⏳</span>
+        <div>
+          <h2 id="countdown-text" class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-0.5">Calculating days to UPSC Exam (23 May 2027)...</h2>
+          <p class="text-[11px] text-slate-400 italic">"Winner never gives up." — Stay consistent with your primary intelligence briefs.</p>
+        </div>
+      </div>
+      <div class="text-[10px] font-bold text-slate-400 uppercase bg-[#0D1117] px-3 py-1.5 rounded-lg border border-[#30363D] shrink-0">
+        🎯 Target: 23 May 2027
+      </div>
+    </div>
+
     <!-- Filters Bar (Timeframe & Date Dropdown) -->
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6 bg-[#161B22] border border-[#30363D] p-3 rounded-xl shadow-sm">
       <div class="flex items-center gap-2 overflow-x-auto">
@@ -69,6 +83,26 @@
     let allAlertsData = [];
     let currentFilter = 'all';
     let selectedDateVal = '';
+
+    // --- Calculate Countdown on Load ---
+    function initCountdown() {
+      const examDate = new Date('2027-05-23T00:00:00');
+      const today = new Date();
+      const diffTime = examDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      const el = document.getElementById('countdown-text');
+      if (el) {
+        if (diffDays > 0) {
+          el.textContent = `${diffDays} more days to the exam`;
+        } else if (diffDays === 0) {
+          el.textContent = `UPSC Civil Services Exam is TODAY! All the best!`;
+        } else {
+          el.textContent = `UPSC Civil Services Exam (23 May 2027)`;
+        }
+      }
+    }
+    initCountdown();
 
     // --- Authentication Logic ---
     async function handleAuthClick() {
@@ -304,16 +338,6 @@
       renderCards(filtered);
     }
 
-    // --- Share Utility ---
-    function shareArticle(title, url) {
-      if (navigator.share) {
-        navigator.share({ title: title, url: url }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(url);
-        alert("Article link copied to clipboard!");
-      }
-    }
-
     // --- Rendering Cards ---
     function renderCards(alerts) {
       const container = document.getElementById("alerts-container");
@@ -350,10 +374,7 @@
           </div>
           <div class="pt-3 border-t border-[#30363D]/60 flex justify-between items-center text-xs text-slate-400">
             <span class="text-[11px]">📅 ${formattedDate}</span>
-            <div class="flex items-center gap-3 font-bold text-[11px]">
-              <button onclick="shareArticle('${escape(alert.title)}', '${alert.link}')" class="hover:text-amber-400 transition flex items-center gap-1 cursor-pointer">🔗 SHARE</button>
-              <a href="${alert.link}" target="_blank" class="text-amber-400 hover:underline flex items-center gap-1">SOURCE ↗</a>
-            </div>
+            <a href="${alert.link}" target="_blank" class="text-amber-400 hover:underline font-bold text-[11px] flex items-center gap-1">SOURCE ↗</a>
           </div>`;
         container.appendChild(card);
       });
