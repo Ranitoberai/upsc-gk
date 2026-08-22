@@ -15,9 +15,12 @@
         <h1 class="text-xl font-extrabold text-white tracking-wide">UPSC GK • Primary Sources</h1>
         <p class="text-xs text-slate-400">Verified updates from PIB, PRS & AIR</p>
       </div>
-      <button class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg text-xs font-bold transition shadow-md">
-        SUBSCRIBE
-      </button>
+      <div class="flex items-center gap-4">
+        <div id="user-info" class="text-xs text-emerald-400 font-semibold hidden"></div>
+        <button id="auth-btn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-lg text-xs font-bold transition shadow-md">
+          Sign In
+        </button>
+      </div>
     </div>
   </header>
 
@@ -30,20 +33,70 @@
   </main>
 
   <script>
-    // 🚨 PASTE YOUR SUPABASE URL AND PUBLIC "ANON" KEY HERE
+    // 🚨 PASTE YOUR SUPABASE "ANON" KEY BELOW (starts with eyJh...)
     const SUPABASE_URL = "https://zyojfrufschtalrprgap.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b2pmcnVmc2NodGFscnByZ2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNzkzNzAsImV4cCI6MjEwMjk1NTM3MH0.xUpWhLduhpHhEh2mWOTfZIkajXvHmTPOvRS8_K_igwg"; 
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // Set to 'false' for free users. Later this will dynamically toggle when users log in!
-    const isPremiumUser = false; 
+    // Auth State Variables
+    let currentUser = null;
+    let isPremiumUser = false; 
 
+    // --- Authentication Logic ---
+    async function handleAuthClick() {
+      if (currentUser) {
+        await supabaseClient.auth.signOut();
+      } else {
+        await supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin
+          }
+        });
+      }
+    }
+
+    function updateUIForAuth(session) {
+      const authBtn = document.getElementById("auth-btn");
+      const userInfo = document.getElementById("user-info");
+      
+      if (session && session.user) {
+        currentUser = session.user;
+        authBtn.textContent = "Sign Out";
+        authBtn.classList.replace("bg-amber-500", "bg-slate-700");
+        authBtn.classList.replace("text-slate-950", "text-white");
+        
+        userInfo.textContent = `Hello, ${currentUser.user_metadata.full_name || currentUser.email}`;
+        userInfo.classList.remove("hidden");
+      } else {
+        currentUser = null;
+        authBtn.textContent = "Sign in with Google";
+        authBtn.classList.replace("bg-slate-700", "bg-amber-500");
+        authBtn.classList.replace("text-white", "text-slate-950");
+        
+        userInfo.textContent = "";
+        userInfo.classList.add("hidden");
+      }
+      
+      fetchAlerts(); 
+    }
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      updateUIForAuth(session);
+    });
+
+    document.getElementById("auth-btn").addEventListener("click", handleAuthClick);
+
+    // --- Fetching Data ---
     async function fetchAlerts() {
       const container = document.getElementById("alerts-container");
       const loading = document.getElementById("loading");
+      
+      container.innerHTML = "";
+      loading.classList.remove("hidden");
+      container.classList.add("hidden");
 
-      // Fetch today's updates (we fetch top 20 just to evaluate)
       const { data, error } = await supabaseClient
         .from('alert_upsc')
         .select('*')
@@ -61,7 +114,6 @@
     function renderAlerts(alerts) {
       const container = document.getElementById("alerts-container");
       const loading = document.getElementById("loading");
-      container.innerHTML = "";
 
       if (alerts.length === 0) {
         container.innerHTML = `<div class="text-center py-16 text-slate-500 text-xs font-bold uppercase">No updates recorded yet.</div>`;
@@ -70,11 +122,11 @@
         return;
       }
 
-      // 1. Separate the Free 3 items from the Locked items
-      const freeItems = isPremiumUser ? alerts : alerts.slice(0, 3);
-      const lockedCount = isPremiumUser ? 0 : Math.max(0, alerts.length - 3);
+      const hasFullAccess = currentUser ? true : isPremiumUser;
 
-      // 2. Render Free Cards
+      const freeItems = hasFullAccess ? alerts : alerts.slice(0, 3);
+      const lockedCount = hasFullAccess ? 0 : Math.max(0, alerts.length - 3);
+
       freeItems.forEach(alert => {
         const card = document.createElement("a");
         card.href = alert.link;
@@ -92,7 +144,6 @@
         container.appendChild(card);
       });
 
-      // 3. Render Paywall Lock Card
       if (lockedCount > 0) {
         const lockCard = document.createElement("div");
         lockCard.className = "relative bg-[#161B22] border border-[#30363D] rounded-xl p-8 overflow-hidden text-center mt-6";
@@ -103,10 +154,10 @@
             </div>
             <h3 class="text-lg font-bold text-white mb-2">Unlock ${lockedCount}+ More Articles</h3>
             <p class="text-sm text-slate-400 mb-6 max-w-sm">
-              Free users can view the top 3 headlines. Subscribe to Premium to access the full real-time intelligence feed across all GS Papers.
+              Free users can view the top 3 headlines. Sign in and subscribe to access the full real-time intelligence feed.
             </p>
-            <button class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg text-sm font-bold transition shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-              Unlock Full Access
+            <button onclick="handleAuthClick()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-6 py-3 rounded-lg text-sm font-bold transition shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              Sign in with Google
             </button>
           </div>
         `;
@@ -117,7 +168,6 @@
       container.classList.remove("hidden");
     }
 
-    fetchAlerts();
   </script>
 </body>
 </html>
