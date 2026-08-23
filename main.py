@@ -134,10 +134,10 @@ def main():
     supabase_key = os.environ.get('SUPABASE_KEY')
     supabase: Client = create_client(supabase_url, supabase_key)
 
-    # 1. Clean old records (>14 days)
-    fourteen_days_ago = (datetime.now(timezone.utc) - timedelta(days=14)).isoformat()
-    supabase.table("raw_upsc_news").delete().lt("published_at", fourteen_days_ago).execute()
-    supabase.table("alert_upsc").delete().lt("published_at", fourteen_days_ago).execute()
+    # 1. Clean old records (>365 days)
+    one_year_ago = (datetime.now(timezone.utc) - timedelta(days=365)).isoformat()
+    supabase.table("raw_upsc_news").delete().lt("published_at", one_year_ago).execute()
+    supabase.table("alert_upsc").delete().lt("published_at", one_year_ago).execute()
 
     # 2. Fetch using Google News Aggregator RSS endpoints to bypass cloud firewalls
     pib_data = process_google_news_feed(
