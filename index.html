@@ -56,9 +56,8 @@
       
       <div class="flex items-center gap-2">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Date:</span>
-        <select id="date-filter" onchange="setDateFilter(this.value)" class="bg-[#0D1117] border border-[#30363D] text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer">
-          <option value="">Select a date...</option>
-        </select>
+        <!-- Native Date Picker with dark mode support -->
+        <input type="date" id="date-filter" onchange="setDateFilter(this.value)" class="bg-[#0D1117] border border-[#30363D] text-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer [color-scheme:dark]">
       </div>
     </div>
 
@@ -241,7 +240,7 @@
         .from('alert_upsc')
         .select('*')
         .order('published_at', { ascending: false })
-        .limit(30);
+        .limit(1500); // Expanded limit to hold historical data for the calendar filter
 
       isFetching = false;
 
@@ -251,41 +250,7 @@
       }
 
       allAlertsData = data || [];
-      populateDateDropdown();
       applyFiltersAndRender();
-    }
-
-    // --- Populate Date Dropdown Dynamically ---
-    function populateDateDropdown() {
-      const select = document.getElementById('date-filter');
-      select.innerHTML = '<option value="">Select a date...</option>';
-      
-      const datesMap = new Set();
-      allAlertsData.forEach(item => {
-        if (item.published_at) {
-          const dateObj = new Date(item.published_at);
-          // Extract YYYY-MM-DD in local time
-          const localYear = dateObj.getFullYear();
-          const localMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
-          const localDay = String(dateObj.getDate()).padStart(2, '0');
-          const d = `${localYear}-${localMonth}-${localDay}`;
-          
-          datesMap.add(d);
-        }
-      });
-
-      const sortedDates = Array.from(datesMap).sort().reverse();
-
-      sortedDates.forEach(dateStr => {
-        const formatted = new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        const opt = document.createElement('option');
-        opt.value = dateStr;
-        opt.textContent = formatted;
-        if (dateStr === selectedDateVal) {
-          opt.selected = true;
-        }
-        select.appendChild(opt);
-      });
     }
 
     // --- Filtering Logic ---
@@ -346,6 +311,9 @@
           return localDateStr === selectedDateVal;
         });
       }
+
+      // Enforce a strict maximum of 30 articles per view
+      filtered = filtered.slice(0, 30);
 
       renderCards(filtered);
     }
