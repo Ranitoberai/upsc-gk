@@ -6,6 +6,7 @@ import feedparser
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from supabase import create_client, Client
+from calendar import timegm
 
 # --- 1. Safeguard & Helper Functions ---
 def contains_stale_date(title):
@@ -102,9 +103,18 @@ def process_google_news_feed(url, source_name, limit=15):
 
         raw_pub = entry.get("published", "")
         iso_pub = datetime.now(timezone.utc).isoformat()
-        if raw_pub:
+        
+        # 1. Try feedparser's robust built-in time parser first (Highly Accurate)
+        if hasattr(entry, 'published_parsed') and entry.published_parsed:
             try:
-                iso_pub = parsedate_to_datetime(raw_pub).isoformat()
+                dt = datetime.fromtimestamp(timegm(entry.published_parsed), tz=timezone.utc)
+                iso_pub = dt.isoformat()
+            except Exception:
+                pass
+        # 2. Fallback to manual string parsing if the above is missing
+        elif entry.get("published"):
+            try:
+                iso_pub = parsedate_to_datetime(entry.get("published")).isoformat()
             except Exception:
                 pass
 
