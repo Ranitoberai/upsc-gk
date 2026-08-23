@@ -332,7 +332,7 @@
           const pubDate = new Date(item.published_at);
           return pubDate.toDateString() === yesterday.toDateString();
         });
-      } } else if (currentFilter === 'date' && selectedDateVal) {
+      } else if (currentFilter === 'date' && selectedDateVal) {
         filtered = filtered.filter(item => {
           if (!item.published_at) return false;
           
