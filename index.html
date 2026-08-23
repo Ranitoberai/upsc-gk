@@ -263,7 +263,13 @@
       const datesMap = new Set();
       allAlertsData.forEach(item => {
         if (item.published_at) {
-          const d = new Date(item.published_at).toISOString().split('T')[0];
+          const dateObj = new Date(item.published_at);
+          // Extract YYYY-MM-DD in local time
+          const localYear = dateObj.getFullYear();
+          const localMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const localDay = String(dateObj.getDate()).padStart(2, '0');
+          const d = `${localYear}-${localMonth}-${localDay}`;
+          
           datesMap.add(d);
         }
       });
@@ -326,11 +332,18 @@
           const pubDate = new Date(item.published_at);
           return pubDate.toDateString() === yesterday.toDateString();
         });
-      } else if (currentFilter === 'date' && selectedDateVal) {
+      } } else if (currentFilter === 'date' && selectedDateVal) {
         filtered = filtered.filter(item => {
           if (!item.published_at) return false;
-          const pubDate = new Date(item.published_at).toISOString().split('T')[0];
-          return pubDate === selectedDateVal;
+          
+          const dateObj = new Date(item.published_at);
+          // Match against local YYYY-MM-DD
+          const localYear = dateObj.getFullYear();
+          const localMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
+          const localDay = String(dateObj.getDate()).padStart(2, '0');
+          const localDateStr = `${localYear}-${localMonth}-${localDay}`;
+          
+          return localDateStr === selectedDateVal;
         });
       }
 
