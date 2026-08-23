@@ -103,6 +103,21 @@
     }
     initCountdown();
 
+    // --- Initialize Date Picker Max Date ---
+    function initDatePicker() {
+      const today = new Date();
+      const localYear = today.getFullYear();
+      const localMonth = String(today.getMonth() + 1).padStart(2, '0');
+      const localDay = String(today.getDate()).padStart(2, '0');
+      const maxDateStr = `${localYear}-${localMonth}-${localDay}`;
+      
+      const datePicker = document.getElementById('date-filter');
+      if (datePicker) {
+        datePicker.max = maxDateStr; // Locks out future dates!
+      }
+    }
+    initDatePicker();
+
     // --- Authentication Logic ---
     async function handleAuthClick() {
       if (currentUser) {
