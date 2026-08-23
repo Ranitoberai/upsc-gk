@@ -73,7 +73,7 @@ def classify_gs_paper(title):
         return "GS Paper 4 (Ethics)", "Ethics & Integrity"
         
     else:
-        return "GS Paper 4 / General Policy", "General Update"
+        return None, None
 
 def fetch_feed_with_user_agent(url):
     try:
@@ -170,9 +170,15 @@ def main():
     supabase.table("raw_upsc_news").upsert(raw_articles, on_conflict="title").execute()
 
     # 4. Process and Upsert Classified Data
+    # 4. Process and Upsert Classified Data
     processed = []
     for item in raw_articles:
         gs_paper, category = classify_gs_paper(item["title"])
+        
+        # 🚨 THE BOUNCER: Skip articles that don't match syllabus keywords
+        if not gs_paper:
+            continue
+
         processed.append({
             "id": item["id"],
             "title": item["title"],
@@ -185,8 +191,11 @@ def main():
             "published_at": item["published_at"]
         })
 
-    supabase.table("alert_upsc").upsert(processed, on_conflict="title").execute()
-    print(f"✅ Successfully processed {len(processed)} UPSC records!")
+    if processed:
+        supabase.table("alert_upsc").upsert(processed, on_conflict="title").execute()
+        print(f"✅ Successfully processed {len(processed)} UPSC records!")
+    else:
+        print("✅ Finished processing. No articles matched syllabus keywords today.")
 
 if __name__ == "__main__":
     main()
