@@ -208,20 +208,27 @@
           const expiresAt = new Date();
           expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-          await supabaseClient
+          const { error } = await supabaseClient
             .from('profiles')
             .upsert({ 
               id: currentUser.id, 
+              email: currentUser.email, // <-- Captures the user's email
               is_premium: true, 
               expires_at: expiresAt.toISOString(),
-              updated_at: new Date() 
+              updated_at: new Date().toISOString() // <-- Standardized timestamp
             });
+
+          if (error) {
+            console.error("Error updating profile in Supabase:", error);
+            alert("Payment recorded, but failed to update profile automatically. Please contact support.");
+            return;
+          }
             
           isPremiumUser = true;
           applyFiltersAndRender();
         },
         "prefill": {
-          "name": currentUser.user_metadata.full_name || "",
+          "name": currentUser.user_metadata?.full_name || "",
           "email": currentUser.email || ""
         },
         "theme": { "color": "#f59e0b" }
