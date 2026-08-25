@@ -31,17 +31,29 @@
   <main class="max-w-7xl mx-auto px-4 py-5">
     
     <!-- Slim UPSC Exam Countdown & Motivation Banner -->
-    <div class="bg-gradient-to-r from-amber-500/10 via-[#161B22] to-amber-500/10 border border-amber-500/25 rounded-lg py-2.5 px-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 shadow-sm">
-      <div class="flex items-center gap-2.5">
-        <span class="text-base">⏳</span>
-        <p class="text-xs text-slate-300">
-          <span id="countdown-text" class="font-bold text-amber-400">Calculating days to UPSC Exam...</span> 
-          <span class="text-slate-500 mx-1.5">|</span> 
-          <span class="italic text-slate-400">"Winner never gives up. Every page you read today brings you one step closer to your dream."</span>
-        </p>
-      </div>
-      <div class="text-[10px] font-bold text-slate-400 uppercase bg-[#0D1117] px-2.5 py-1 rounded border border-[#30363D] shrink-0">
-      Mission UPSC CSE 2027: 23 May 2027
+    <!-- Slim UPSC Exam Countdown & Motivation Banner (LBSNAA Theme) -->
+    <div class="relative overflow-hidden border border-amber-500/25 rounded-lg mb-5 shadow-sm group">
+      
+      <!-- LBSNAA Background Image -->
+      <!-- Replace the URL below with your preferred LBSNAA photo link -->
+      <div class="absolute inset-0 bg-[url('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/LBSNAA_Main_Building.jpg/1200px-LBSNAA_Main_Building.jpg')] bg-cover bg-center opacity-20 group-hover:opacity-30 transition-opacity duration-700"></div>
+      
+      <!-- Dark Gradient Overlay (Keeps text readable) -->
+      <div class="absolute inset-0 bg-gradient-to-r from-[#0D1117] via-[#161B22]/70 to-[#0D1117]"></div>
+
+      <!-- Banner Content -->
+      <div class="relative z-10 py-3 px-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="text-base drop-shadow-md">⏳</span>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <span id="countdown-text" class="text-xs font-bold text-amber-400 drop-shadow-md">Calculating days to UPSC Exam...</span> 
+            <span class="hidden sm:inline text-slate-500">|</span> 
+            <span class="text-xs italic text-slate-200 font-medium tracking-wide drop-shadow-md">"कोई भी लक्ष्य हमसे बड़ा नही, हारा वो जो लड़ा नहीं !!"</span>
+          </div>
+        </div>
+        <div class="text-[10px] font-bold text-amber-400/90 uppercase bg-[#0D1117]/80 backdrop-blur-md px-2.5 py-1 rounded border border-amber-500/20 shrink-0 shadow-lg">
+          Mission UPSC CSE 2027: 23 May 2027
+        </div>
       </div>
     </div>
 
