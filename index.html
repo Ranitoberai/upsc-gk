@@ -74,7 +74,7 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5b2pmcnVmc2NodGFscnByZ2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczNzkzNzAsImV4cCI6MjEwMjk1NTM3MH0.xUpWhLduhpHhEh2mWOTfZIkajXvHmTPOvRS8_K_igwg"; 
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const RAZORPAY_KEY_ID = "rzp_test_TTTKuADvMIJnja";
+    const RAZORPAY_KEY_ID = "rzp_live_TTp2wUT5QjodPm";
     
     // Auth State Variables
     let currentUser = null;
@@ -198,7 +198,7 @@
 
       const options = {
         "key": RAZORPAY_KEY_ID,
-        "amount": "60000", // ₹600 in paise
+        "amount": "1000", // ₹600 in paise
         "currency": "INR",
         "name": "IAS Focus",
         "description": "Annual Intelligence Briefs Subscription (1 Year)",
@@ -390,7 +390,7 @@
         const lockCard = document.createElement("div");
         lockCard.className = "col-span-full bg-gradient-to-r from-[#161B22] via-[#1f2937] to-[#161B22] border border-amber-500/30 rounded-xl p-8 text-center mt-4 shadow-xl";
         
-        const buttonText = currentUser ? "Subscribe Now (₹600 / Year)" : "Sign in to Subscribe";
+        const buttonText = currentUser ? "Subscribe Now (₹10 / Year)" : "Sign in to Subscribe";
         const buttonAction = currentUser ? "startPayment()" : "handleAuthClick()";
 
         lockCard.innerHTML = `
