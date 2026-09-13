@@ -226,6 +226,7 @@
             .upsert({ 
               id: currentUser.id, 
               email: currentUser.email, // <-- Captures the user's email
+              full_name: currentUser.user_metadata?.full_name || "", // <-- Add this line
               is_premium: true, 
               expires_at: expiresAt.toISOString(),
               updated_at: new Date().toISOString() // <-- Standardized timestamp
