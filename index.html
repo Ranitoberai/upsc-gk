@@ -416,14 +416,6 @@
             <p class="text-sm text-slate-300 mb-6 leading-relaxed">
               Free users can view the top 3 headlines. Subscribe for annual access to the full real-time intelligence feed.
             </p>
-            
-            <!-- NEW PROMO CODE BOX -->
-            ${currentUser ? `
-              <div class="mb-4 w-full max-w-xs">
-                <input type="text" id="promo-code" placeholder="Have a Partner Code?" class="w-full bg-[#0D1117] border border-[#30363D] text-slate-200 text-sm px-4 py-2 rounded-lg focus:outline-none focus:border-amber-500 text-center uppercase placeholder-slate-600">
-              </div>
-            ` : ''}
-
             <button onclick="${buttonAction}" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-8 py-3 rounded-xl text-sm font-bold transition shadow-[0_0_20px_rgba(245,158,11,0.25)] cursor-pointer">
               ${buttonText}
             </button>
